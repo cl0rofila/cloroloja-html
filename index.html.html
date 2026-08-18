@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Gestão de Vendas & Estoque</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .nav-tabs .nav-link { font-weight: 600; color: #495057; }
+    .nav-tabs .nav-link.active { color: #0d6efd; border-bottom: 3px solid #0d6efd; }
+    .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
+    .badge-stock { font-size: 0.9rem; }
+    .metric-card { transition: transform 0.2s; }
+    .metric-card:hover { transform: translateY(-3px); }
+  </style>
+</head>
+<body>
+
+<div class="container py-4">
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0 text-dark">Controle de Vendas & Estoque</h2>
+      <p class="text-muted mb-0">Gestão simplificada de produtos, clientes e faturamento</p>
+    </div>
+  </div>
+
+  <!-- Métricas Rápidas -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card p-3 bg-white metric-card">
+        <span class="text-muted small fw-bold">TOTAL VENDIDO</span>
+        <h3 class="fw-bold text-success mb-0" id="dashTotalVendas">R$ 0,00</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-3 bg-white metric-card">
+        <span class="text-muted small fw-bold">LUCRO ESTIMADO</span>
+        <h3 class="fw-bold text-primary mb-0" id="dashLucro">R$ 0,00</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-3 bg-white metric-card">
+        <span class="text-muted small fw-bold">PRODUTOS CADASTRADOS</span>
+        <h3 class="fw-bold text-dark mb-0" id="dashProdutos">0</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-3 bg-white metric-card">
+        <span class="text-muted small fw-bold">CLIENTES</span>
+        <h3 class="fw-bold text-dark mb-0" id="dashClientes">0</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegação por Abas -->
+  <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
+    <li class="nav-item">
+      <button class="nav-link active" id="vendas-tab" data-bs-toggle="tab" data-bs-target="#vendas" type="button"><i class="bi bi-cart-check me-2"></i>Registrar Venda</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="produtos-tab" data-bs-toggle="tab" data-bs-target="#produtos" type="button"><i class="bi bi-box-seam me-2"></i>Produtos & Estoque</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="clientes-tab" data-bs-toggle="tab" data-bs-target="#clientes" type="button"><i class="bi bi-people me-2"></i>Clientes</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="historico-tab" data-bs-toggle="tab" data-bs-target="#historico" type="button"><i class="bi bi-receipt me-2"></i>Histórico de Vendas</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="mainTabContent">
+    
+    <!-- ABA: REGISTRAR VENDA -->
+    <div class="tab-pane fade show active" id="vendas" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="card p-4">
+            <h5 class="fw-bold mb-3">Nova Venda</h5>
+            <form id="formVenda">
+              <div class="mb-3">
+                <label class="form-label">Cliente</label>
+                <select class="form-select" id="vendaCliente" required>
+                  <option value="">Selecione um cliente...</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Produto</label>
+                <select class="form-select" id="vendaProduto" onchange="atualizarInfoProduto()" required>
+                  <option value="">Selecione um produto...</option>
+                </select>
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Qtd.</label>
+                  <input type="number" class="form-control" id="vendaQtd" min="1" value="1" oninput="calcularTotalVenda()" required>
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Preço Unit. (R$)</label>
+                  <input type="number" step="0.01" class="form-control" id="vendaPrecoUnit" readonly>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Desconto (R$)</label>
+                  <input type="number" step="0.01" class="form-control" id="vendaDesconto" min="0" value="0" oninput="calcularTotalVenda()">
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Forma de Pagamento</label>
+                  <select class="form-select" id="vendaPagamento" required>
+                    <option value="Pix">Pix</option>
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="alert alert-light border p-3 mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Subtotal:</span>
+                  <span id="vendaSubtotal">R$ 0,00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1 text-danger">
+                  <span>Desconto:</span>
+                  <span id="vendaDescontoAplicado">- R$ 0,00</span>
+                </div>
+                <div class="d-flex justify-content-between fw-bold fs-5 text-dark border-top pt-2 mt-2">
+                  <span>Total Final:</span>
+                  <span id="vendaTotalFinal">R$ 0,00</span>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-success w-100 py-2 fw-bold"><i class="bi bi-check2-circle me-1"></i> Concluir Venda</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card p-4">
+            <h5 class="fw-bold mb-3">Últimas Vendas Realizadas</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Produto</th>
+                    <th>Total</th>
+                    <th>Pagamento</th>
+                  </tr>
+                </thead>
+                <tbody id="listaUltimasVendas"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA: PRODUTOS -->
+    <div class="tab-pane fade" id="produtos" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card p-4">
+            <h5 class="fw-bold mb-3" id="formProdutoTitulo">Novo Produto</h5>
+            <form id="formProduto">
+              <input type="hidden" id="prodId">
+              <div class="mb-3">
+                <label class="form-label">Nome do Produto</label>
+                <input type="text" class="form-control" id="prodNome" required>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Preço Compra (R$)</label>
+                  <input type="number" step="0.01" class="form-control" id="prodCompra" required>
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Preço Venda (R$)</label>
+                  <input type="number" step="0.01" class="form-control" id="prodVenda" required>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Quantidade em Estoque</label>
+                <input type="number" class="form-control" id="prodEstoque" min="0" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Foto do Produto</label>
+                <input type="file" class="form-control" id="prodFoto" accept="image/*" onchange="previewImagem(event)">
+                <div class="mt-2 text-center" id="boxPreviewFoto" style="display:none;">
+                  <img id="previewImg" src="" class="img-preview rounded shadow-sm" style="width: 80px; height: 80px;">
+                </div>
+              </div>
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1 fw-bold">Salvar Produto</button>
+                <button type="button" class="btn btn-light" onclick="cancelarEdicaoProduto()">Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card p-4">
+            <h5 class="fw-bold mb-3">Catálogo de Produtos</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Foto</th>
+                    <th>Produto</th>
+                    <th>Preço Compra</th>
+                    <th>Preço Venda</th>
+                    <th>Estoque</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelaProdutos"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA: CLIENTES -->
+    <div class="tab-pane fade" id="clientes" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card p-4">
+            <h5 class="fw-bold mb-3">Cadastrar Cliente</h5>
+            <form id="formCliente">
+              <div class="mb-3">
+                <label class="form-label">Nome Completo</label>
+                <input type="text" class="form-control" id="cliNome" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Telefone / WhatsApp</label>
+                <input type="tel" class="form-control" id="cliTelefone">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="cliEmail">
+              </div>
+              <button type="submit" class="btn btn-primary w-100 fw-bold">Cadastrar Cliente</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card p-4">
+            <h5 class="fw-bold mb-3">Lista de Clientes</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>E-mail</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelaClientes"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA: HISTÓRICO -->
+    <div class="tab-pane fade" id="historico" role="tabpanel">
+      <div class="card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Relatório Geral de Vendas</h5>
+          <button class="btn btn-outline-danger btn-sm" onclick="limparHistoricoVendas()"><i class="bi bi-trash"></i> Limpar Histórico</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Data/Hora</th>
+                <th>Cliente</th>
+                <th>Produto</th>
+                <th>Qtd</th>
+                <th>Preço Unit.</th>
+                <th>Desconto</th>
+                <th>Total Pago</th>
+                <th>Pagamento</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaHistoricoCompleto"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Estado da Aplicação (Carrega do localStorage)
+  let produtos = JSON.parse(localStorage.getItem('app_produtos')) || [];
+  let clientes = JSON.parse(localStorage.getItem('app_clientes')) || [];
+  let vendas = JSON.parse(localStorage.getItem('app_vendas')) || [];
+  let fotoBase64Temp = "";
+
+  // Utilitários de formatação de moeda
+  const formatMoney = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  // Inicialização
+  document.addEventListener('DOMContentLoaded', () => {
+    atualizarTudo();
+  });
+
+  function salvarDados() {
+    localStorage.setItem('app_produtos', JSON.stringify(produtos));
+    localStorage.setItem('app_clientes', JSON.stringify(clientes));
+    localStorage.setItem('app_vendas', JSON.stringify(vendas));
+    atualizarTudo();
+  }
+
+  function atualizarTudo() {
+    renderProdutos();
+    renderClientes();
+    renderVendas();
+    renderDashboards();
+    carregarSelects();
+  }
+
+  // --- FOTOS (Base64) ---
+  function previewImagem(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        fotoBase64Temp = e.target.result;
+        document.getElementById('previewImg').src = fotoBase64Temp;
+        document.getElementById('boxPreviewFoto').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // --- PRODUTOS ---
+  document.getElementById('formProduto').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = document.getElementById('prodId').value;
+    const nome = document.getElementById('prodNome').value;
+    const compra = parseFloat(document.getElementById('prodCompra').value);
+    const venda = parseFloat(document.getElementById('prodVenda').value);
+    const estoque = parseInt(document.getElementById('prodEstoque').value);
+
+    if (id) {
+      const index = produtos.findIndex(p => p.id === id);
+      produtos[index] = {
+        ...produtos[index],
+        nome, compra, venda, estoque,
+        foto: fotoBase64Temp || produtos[index].foto
+      };
+    } else {
+      produtos.push({
+        id: Date.now().toString(),
+        nome, compra, venda, estoque,
+        foto: fotoBase64Temp || "https://placehold.co/100x100?text=Sem+Foto"
+      });
+    }
+
+    cancelarEdicaoProduto();
+    salvarDados();
+  });
+
+  function renderProdutos() {
+    const tbody = document.getElementById('tabelaProdutos');
+    tbody.innerHTML = '';
+    produtos.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><img src="${p.foto}" class="img-preview" alt="${p.nome}"></td>
+        <td><strong>${p.nome}</strong></td>
+        <td>${formatMoney(p.compra)}</td>
+        <td><strong class="text-success">${formatMoney(p.venda)}</strong></td>
+        <td><span class="badge ${p.estoque > 5 ? 'bg-success' : 'bg-danger'} badge-stock">${p.estoque} un</span></td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary me-1" onclick="editarProduto('${p.id}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="removerProduto('${p.id}')"><i class="bi bi-trash"></i></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function editarProduto(id) {
+    const p = produtos.find(item => item.id === id);
+    if (!p) return;
+    document.getElementById('prodId').value = p.id;
+    document.getElementById('prodNome').value = p.nome;
+    document.getElementById('prodCompra').value = p.compra;
+    document.getElementById('prodVenda').value = p.venda;
+    document.getElementById('prodEstoque').value = p.estoque;
+    fotoBase64Temp = p.foto;
+    document.getElementById('previewImg').src = p.foto;
+    document.getElementById('boxPreviewFoto').style.display = 'block';
+    document.getElementById('formProdutoTitulo').innerText = 'Editar Produto';
+  }
+
+  function cancelarEdicaoProduto() {
+    document.getElementById('formProduto').reset();
+    document.getElementById('prodId').value = '';
+    fotoBase64Temp = '';
+    document.getElementById('boxPreviewFoto').style.display = 'none';
+    document.getElementById('formProdutoTitulo').innerText = 'Novo Produto';
+  }
+
+  function removerProduto(id) {
+    if (confirm('Deseja realmente remover este produto?')) {
+      produtos = produtos.filter(p => p.id !== id);
+      salvarDados();
+    }
+  }
+
+  // --- CLIENTES ---
+  document.getElementById('formCliente').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const nome = document.getElementById('cliNome').value;
+    const telefone = document.getElementById('cliTelefone').value;
+    const email = document.getElementById('cliEmail').value;
+
+    clientes.push({ id: Date.now().toString(), nome, telefone, email });
+    document.getElementById('formCliente').reset();
+    salvarDados();
+  });
+
+  function renderClientes() {
+    const tbody = document.getElementById('tabelaClientes');
+    tbody.innerHTML = '';
+    clientes.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${c.nome}</strong></td>
+        <td>${c.telefone || '-'}</td>
+        <td>${c.email || '-'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger" onclick="removerCliente('${c.id}')"><i class="bi bi-trash"></i></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function removerCliente(id) {
+    if (confirm('Deseja realmente remover este cliente?')) {
+      clientes = clientes.filter(c => c.id !== id);
+      salvarDados();
+    }
+  }
+
+  // --- VENDAS ---
+  function carregarSelects() {
+    const selCliente = document.getElementById('vendaCliente');
+    const selProduto = document.getElementById('vendaProduto');
+
+    selCliente.innerHTML = '<option value="">Selecione um cliente...</option>';
+    clientes.forEach(c => {
+      selCliente.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
+    });
+
+    selProduto.innerHTML = '<option value="">Selecione um produto...</option>';
+    produtos.forEach(p => {
+      selProduto.innerHTML += `<option value="${p.id}">${p.nome} (Estoque: ${p.estoque})</option>`;
+    });
+  }
+
+  function atualizarInfoProduto() {
+    const prodId = document.getElementById('vendaProduto').value;
+    const prod = produtos.find(p => p.id === prodId);
+    if (prod) {
+      document.getElementById('vendaPrecoUnit').value = prod.venda;
+      document.getElementById('vendaQtd').max = prod.estoque;
+    } else {
+      document.getElementById('vendaPrecoUnit').value = 0;
+    }
+    calcularTotalVenda();
+  }
+
+  function calcularTotalVenda() {
+    const qtd = parseInt(document.getElementById('vendaQtd').value) || 0;
+    const unit = parseFloat(document.getElementById('vendaPrecoUnit').value) || 0;
+    const desconto = parseFloat(document.getElementById('vendaDesconto').value) || 0;
+
+    const subtotal = qtd * unit;
+    const total = Math.max(0, subtotal - desconto);
+
+    document.getElementById('vendaSubtotal').innerText = formatMoney(subtotal);
+    document.getElementById('vendaDescontoAplicado').innerText = `- ${formatMoney(desconto)}`;
+    document.getElementById('vendaTotalFinal').innerText = formatMoney(total);
+  }
+
+  document.getElementById('formVenda').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const cliente = document.getElementById('vendaCliente').value;
+    const prodId = document.getElementById('vendaProduto').value;
+    const qtd = parseInt(document.getElementById('vendaQtd').value);
+    const desconto = parseFloat(document.getElementById('vendaDesconto').value) || 0;
+    const pagamento = document.getElementById('vendaPagamento').value;
+
+    const produto = produtos.find(p => p.id === prodId);
+    if (!produto) return alert('Selecione um produto válido.');
+    if (produto.estoque < qtd) return alert(`Estoque insuficiente! Disponível: ${produto.estoque}`);
+
+    // Baixa de estoque
+    produto.estoque -= qtd;
+
+    const unit = produto.venda;
+    const subtotal = qtd * unit;
+    const totalFinal = Math.max(0, subtotal - desconto);
+    const custoTotal = qtd * produto.compra;
+    const lucro = totalFinal - custoTotal;
+
+    const novaVenda = {
+      id: Date.now().toString(),
+      data: new Date().toLocaleString('pt-BR'),
+      cliente,
+      produtoNome: produto.nome,
+      qtd,
+      precoUnit: unit,
+      desconto,
+      totalFinal,
+      lucro,
+      formaPagamento: pagamento
+    };
+
+    vendas.unshift(novaVenda);
+    document.getElementById('formVenda').reset();
+    document.getElementById('vendaPrecoUnit').value = '';
+    calcularTotalVenda();
+    salvarDados();
+    alert('Venda registrada com sucesso!');
+  });
+
+  function renderVendas() {
+    const tbodyUltimas = document.getElementById('listaUltimasVendas');
+    const tbodyCompleto = document.getElementById('tabelaHistoricoCompleto');
+
+    tbodyUltimas.innerHTML = '';
+    tbodyCompleto.innerHTML = '';
+
+    vendas.slice(0, 5).forEach(v => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="small text-muted">${v.data.split(' ')[0]}</td>
+        <td>${v.cliente}</td>
+        <td>${v.produtoNome} (x${v.qtd})</td>
+        <td><strong class="text-success">${formatMoney(v.totalFinal)}</strong></td>
+        <td><span class="badge bg-secondary">${v.formaPagamento}</span></td>
+      `;
+      tbodyUltimas.appendChild(tr);
+    });
+
+    vendas.forEach(v => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${v.data}</td>
+        <td><strong>${v.cliente}</strong></td>
+        <td>${v.produtoNome}</td>
+        <td>${v.qtd}</td>
+        <td>${formatMoney(v.precoUnit)}</td>
+        <td class="text-danger">${formatMoney(v.desconto)}</td>
+        <td><strong class="text-success">${formatMoney(v.totalFinal)}</strong></td>
+        <td><span class="badge bg-primary">${v.formaPagamento}</span></td>
+      `;
+      tbodyCompleto.appendChild(tr);
+    });
+  }
+
+  function renderDashboards() {
+    const total = vendas.reduce((acc, v) => acc + v.totalFinal, 0);
+    const lucro = vendas.reduce((acc, v) => acc + (v.lucro || 0), 0);
+
+    document.getElementById('dashTotalVendas').innerText = formatMoney(total);
+    document.getElementById('dashLucro').innerText = formatMoney(lucro);
+    document.getElementById('dashProdutos').innerText = produtos.length;
+    document.getElementById('dashClientes').innerText = clientes.length;
+  }
+
+  function limparHistoricoVendas() {
+    if (confirm('Tem certeza que deseja limpar todo o histórico de vendas?')) {
+      vendas = [];
+      salvarDados();
+    }
+  }
+</script>
+</body>
+</html>
