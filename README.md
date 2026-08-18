@@ -1,0 +1,2 @@
+# cloroloja-html
+lojinha certa
